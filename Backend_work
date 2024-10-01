@@ -1,0 +1,17 @@
+from fastapi import FastAPI, UploadFile
+from PIL import Image
+import numpy as np
+from models.attention_unet import attention_unet
+
+app = FastAPI()
+
+segmentation_model = attention_unet()
+segmentation_model.load_weights('weights/attention_unet_weights.h5')
+
+@app.post("/predict")
+async def predict_image(uploaded_file: UploadFile):
+    """API endpoint to get metastasis segmentation predictions."""
+    img_array = np.array(Image.open(uploaded_file.file).convert('L')) 
+    img_array = np.expand_dims(img_array, axis=[0, -1]) 
+    prediction = segmentation_model.predict(img_array)
+    return {"segmentation": prediction.tolist()}
